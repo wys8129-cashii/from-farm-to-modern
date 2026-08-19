@@ -1545,14 +1545,14 @@ JSON 文件包含以下顶层字段：
    - title: 视频标题
    - source: 来源平台（如 Bilibili、CCTV、YouTube）
    - url: 视频链接
-   - cover: 封面图 URL（使用 https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt={描述}&image_size=landscape_16_9 生成）
+   - cover: 封面图 URL（用 CSS 纯色/渐变占位或者大模型生成、对应视频封面图）
 
 ## 补充规则
 
 1. 只补充 details 中不存在的设备，已存在的不要修改
 2. 每个设备至少补充 3-5 家供应商、6-10 步生产流程、4-6 个零部件分组、2-4 个参考视频
 3. 供应商信息要真实准确，排名基于中国市场份额
-4. 参考视频链接使用真实可访问的 URL（Bilibili/CCTV 等）
+4. 参考视频链接使用真实可访问的 URL（Bilibili/CCTV /抖音/小红书等）
 5. 封面图用上述 API 格式生成，prompt 描述要具体（如"挖掘机生产线焊接车间工业摄影"）
 6. 输出完整的 JSON 文件，保持原有结构不变，只新增 details 中的条目
 
