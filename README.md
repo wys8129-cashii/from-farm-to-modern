@@ -36,11 +36,14 @@
 ## 文件结构
 
 ```
-industrial-equipment-encyclopedia/
+from-farm-to-modern/
 ├── industrial-equipment-encyclopedia.html   # 主页面（自包含）
-├── industrial-equipment-encyclopedia.backup.html  # 备份版本
-├── industrial-stack.html                    # 层叠图（早期版本）
-├── industrial-encyclopedia.html              # 百科全书（早期版本）
+├── assets/
+│   └── images/                              # 视频封面图（AI 生成）
+│       ├── img-excavator-assembly.jpg
+│       ├── img-excavator-smart-factory.jpg
+│       ├── img-excavator-testing.jpg
+│       └── img-excavator-welding.jpg
 └── README.md                                # 本文档
 ```
 
