@@ -806,6 +806,10 @@
           <svg viewBox="0 0 16 16" fill="none"><path d="M8 2V11M8 11L4 7M8 11L12 7" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 13H13" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
           切换数据库
         </button>
+        <button class="export-btn" id="resetDbBtn" title="恢复默认数据，清除已加载的数据库" style="display:none">
+          <svg viewBox="0 0 16 16" fill="none"><path d="M3 8C3 5 5 3 8 3C10 3 12 4 12.5 5.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><path d="M12.5 3V5.5H10" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><path d="M13 8C13 11 11 13 8 13C6 13 4 12 3.5 10.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><path d="M3.5 13V10.5H6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          恢复默认
+        </button>
         <button class="export-btn" id="exportMdBtn" title="导出为 Markdown 文档">
           <svg viewBox="0 0 16 16" fill="none"><path d="M3 4H7L8 5.5L9 4H13V12H3V4Z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><path d="M7 4V12M9 4V12" stroke="currentColor" stroke-width="1.3"/></svg>
           导出 Markdown
@@ -1609,6 +1613,18 @@
           dbDot.classList.remove('error');
 
           showToast(`已加载数据库：${file.name}（${totalItems}设备，${detailCount}详情）`);
+
+          // Persist to localStorage
+          try {
+            localStorage.setItem('ind-equip-db', JSON.stringify({
+              fileName: file.name,
+              layers: layersData,
+              details: equipmentDetails
+            }));
+            resetDbBtn.style.display = '';
+          } catch(e) {
+            console.warn('localStorage save failed:', e);
+          }
         } catch (err) {
           dbStatusText.textContent = '加载失败';
           dbDot.classList.add('error');
@@ -1628,6 +1644,43 @@
     });
 
     // === Init ===
+    // Restore from localStorage if available
+    const resetDbBtn = document.getElementById('resetDbBtn');
+    const savedDB = localStorage.getItem('ind-equip-db');
+    if (savedDB) {
+      try {
+        const db = JSON.parse(savedDB);
+        // Restore layers
+        if (db.layers && Array.isArray(db.layers)) {
+          layersData.length = 0;
+          db.layers.forEach(l => layersData.push(l));
+        }
+        // Restore details
+        if (db.details && typeof db.details === 'object') {
+          Object.keys(equipmentDetails).forEach(k => delete equipmentDetails[k]);
+          Object.keys(db.details).forEach(k => { equipmentDetails[k] = db.details[k]; });
+        }
+        // Update status
+        const detailCount = Object.keys(equipmentDetails).length;
+        const totalItems = layersData.reduce((sum, l) =>
+          sum + l.subcategories.reduce((s, c) => s + c.items.length, 0), 0);
+        const shortName = db.fileName ? (db.fileName.length > 20 ? db.fileName.slice(0, 18) + '…' : db.fileName) : '已保存';
+        dbStatusText.textContent = `${shortName} · ${detailCount}/${totalItems}详情`;
+        dbDot.classList.add('loaded');
+        dbDot.classList.remove('error');
+        resetDbBtn.style.display = '';
+      } catch(e) {
+        console.warn('localStorage restore failed:', e);
+        localStorage.removeItem('ind-equip-db');
+      }
+    }
+
+    // Reset button handler
+    resetDbBtn.addEventListener('click', () => {
+      localStorage.removeItem('ind-equip-db');
+      location.reload();
+    });
+
     selectLayer(0);
 
     // === Prompt Popover ===
