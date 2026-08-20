@@ -345,6 +345,38 @@
       border-bottom: 2px solid var(--ink);
     }
 
+    /* === Equipment Description === */
+    .equip-description {
+      font-size: 0.9375rem;
+      line-height: 1.85;
+      color: #2a3a4e;
+      padding: 16px 20px;
+      background: #f7f9fb;
+      border-left: 3px solid var(--accent);
+      border-radius: 0 8px 8px 0;
+    }
+    .equip-link {
+      color: var(--accent);
+      font-weight: 600;
+      text-decoration: none;
+      cursor: pointer;
+      border-bottom: 1px dashed var(--accent);
+      transition: all 0.15s;
+    }
+    .equip-link:hover {
+      color: #b54218;
+      border-bottom-style: solid;
+      background: rgba(204, 68, 26, 0.06);
+    }
+    .equip-link-pending {
+      color: #8a9aaa;
+      border-bottom-color: #c0c8d0;
+    }
+    .equip-link-pending:hover {
+      color: #6a7a8a;
+      background: rgba(138, 154, 170, 0.06);
+    }
+
     /* === Supplier Table === */
     .supplier-list { display: flex; flex-direction: column; gap: 10px; }
     .supplier-card {
@@ -915,6 +947,7 @@
     const equipmentDetails = {
       '挖掘机': {
         layer: 'L1', layerName: '资源采掘工业',
+        description: '挖掘机是资源采掘工业的核心设备，主要用于土方开挖、矿石采掘和物料装载。在露天采矿流程中，[[钻机]]完成爆破孔钻进后，挖掘机进行松方采集，再将矿石装载到[[矿用卡车]]上运输至破碎站。在工程建设中，挖掘机与[[推土机]]、[[装载机]]配合完成土方平整和回填作业，[[混凝土泵车]]则负责后续浇筑。大型矿山场景下，[[旋挖钻机]]负责桩基施工，挖掘机配合[[球磨机]]产线的原料供给环节。',
         suppliers: [
           { rank: 1, name: '三一重工 SANY', desc: '中型液压挖掘机（20-35吨级）领先，全球35座智能工厂', share: '28.99%', shareLabel: '国内市占率' },
           { rank: 2, name: '徐工集团 XCMG', desc: '轮式挖掘机优势显著，矿山设备领域强势', share: '17.89%', shareLabel: '国内市占率' },
@@ -1073,6 +1106,42 @@
       detailTitle.textContent = name;
       detailEyebrow.textContent = `${data.layer} · ${data.layerName}`;
       detailBody.innerHTML = '';
+
+      // --- Description ---
+      if (data.description) {
+        const sec = document.createElement('div');
+        sec.className = 'detail-section';
+        sec.innerHTML = '<p class="detail-section-title">设备描述与工业作用</p>';
+        const desc = document.createElement('div');
+        desc.className = 'equip-description';
+
+        // Parse [[equipment name]] markers into clickable links
+        const parts = data.description.split(/(\[\[[^\]]+\]\])/g);
+        parts.forEach(part => {
+          const match = part.match(/^\[\[([^\]]+)\]\]$/);
+          if (match) {
+            const eqName = match[1];
+            const link = document.createElement('a');
+            link.className = 'equip-link';
+            link.textContent = eqName;
+            link.href = 'javascript:void(0)';
+            const hasDetail = equipmentDetails[eqName] !== undefined;
+            if (!hasDetail) link.classList.add('equip-link-pending');
+            link.title = hasDetail ? `点击查看${eqName}详情` : `${eqName}（详情待补充）`;
+            link.addEventListener('click', (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              openDetail(eqName);
+            });
+            desc.appendChild(link);
+          } else if (part) {
+            desc.appendChild(document.createTextNode(part));
+          }
+        });
+
+        sec.appendChild(desc);
+        detailBody.appendChild(sec);
+      }
 
       // --- Suppliers ---
       if (data.suppliers) {
@@ -1325,6 +1394,11 @@
             if (detail) {
               md += `#### [详情已填] ${item}\n\n`;
 
+              // Description
+              if (detail.description) {
+                md += `**设备描述：**\n\n${detail.description}\n\n`;
+              }
+
               // Suppliers
               if (detail.suppliers && detail.suppliers.length > 0) {
                 md += `**供应商：**\n\n`;
@@ -1364,6 +1438,7 @@
               }
             } else {
               md += `#### [待补充] ${item}\n\n`;
+              md += `**设备描述：**\n> 待补充（用 [[设备名]] 标记可跳转的关联设备）\n\n`;
               md += `**供应商：**\n> 待补充\n\n`;
               md += `**生产流程：**\n> 待补充\n\n`;
               md += `**零部件与关键技术：**\n> 待补充\n\n`;
@@ -1396,6 +1471,7 @@
           version: '1.0',
           purpose: '供 AI 读取并补充缺失的设备详情信息',
           schema: {
+            description: 'string — 设备描述，用 [[设备名]] 标记可跳转的关联设备',
             suppliers: 'Array<{ rank: number, name: string, desc: string, share: string, shareLabel: string }>',
             production: 'Array<{ title: string, desc: string }>',
             parts: 'Array<{ group: string, items: string[] }>',
@@ -1567,6 +1643,12 @@ JSON 文件包含以下顶层字段：
 
 请按 template 的结构为每个待补充设备填写以下字段：
 
+0. description — 设备描述与工业作用（字符串）
+   - 介绍该设备在所属工业流程环节中的核心作用
+   - 说明它与同分类或跨分类中其他设备如何协作配合
+   - 用 [[设备名]] 双方括号标记提到的其他设备名称，页面会自动生成可点击的跳转链接
+   - 示例：挖掘机是资源采掘工业的核心设备，主要用于土方开挖和矿石装载。在采矿流程中，[[钻机]]完成爆破孔钻进后，挖掘机进行松方采集，再将矿石装载到[[矿用卡车]]上运输。
+
 1. suppliers — 中国主要供应商列表
    - name: 企业全称
    - rank: 行业排名或地位描述
@@ -1590,11 +1672,12 @@ JSON 文件包含以下顶层字段：
 ## 补充规则
 
 1. 只补充 details 中不存在的设备，已存在的不要修改
-2. 每个设备至少补充 3-5 家供应商、6-10 步生产流程、4-6 个零部件分组、2-4 个参考视频
+2. 每个设备必须补充 description 字段（2-4句话），至少补充 3-5 家供应商、6-10 步生产流程、4-6 个零部件分组、2-4 个参考视频
 3. 供应商信息要真实准确，排名基于中国市场份额
 4. 参考视频链接使用真实可访问的 URL（Bilibili/CCTV /抖音/小红书等）
 5. 封面图 img 字段留空即可，页面会自动用渐变色背景+标题文字占位
-6. 输出完整的 JSON 文件，保持原有结构不变，只新增 details 中的条目
+6. description 中用 [[设备名]] 标记的设备名应尽量使用 layers 中已存在的设备名称
+7. 输出完整的 JSON 文件，保持原有结构不变，只新增 details 中的条目
 
 ## 输出格式
 
