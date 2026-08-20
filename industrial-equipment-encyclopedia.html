@@ -515,6 +515,23 @@
       transition: transform 0.3s;
     }
     .video-card:hover .video-thumb img { transform: scale(1.05); }
+    .video-thumb-placeholder {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    .video-thumb-text {
+      color: rgba(255,255,255,0.92);
+      font-size: 15px;
+      font-weight: 600;
+      text-align: center;
+      line-height: 1.4;
+      text-shadow: 0 1px 4px rgba(0,0,0,0.3);
+      max-width: 90%;
+      word-break: break-word;
+      pointer-events: none;
+    }
     .video-play {
       position: absolute;
       top: 50%; left: 50%;
@@ -1150,17 +1167,40 @@
           card.href = v.url;
           card.target = '_blank';
           card.rel = 'noopener';
-          card.innerHTML = `
-            <div class="video-thumb">
-              <img src="${v.img}" alt="${v.title}" loading="lazy">
-              <div class="video-play">${playIcon}</div>
-              <span class="video-source">${v.source}</span>
-            </div>
-            <div class="video-info">
-              <div class="video-title">${v.title}</div>
-              <div class="video-meta">${v.meta}</div>
-            </div>
-          `;
+          const hasImg = v.img && v.img.trim();
+          const gradients = {
+            'Bilibili': 'linear-gradient(135deg, #fb7299, #00a1d6)',
+            'CCTV': 'linear-gradient(135deg, #c41e3a, #e8a024)',
+            'YouTube': 'linear-gradient(135deg, #ff0000, #cc0000)',
+            '抖音': 'linear-gradient(135deg, #25f4ee, #fe2c55)',
+            '小红书': 'linear-gradient(135deg, #ff2442, #ff6b6b)'
+          };
+          if (hasImg) {
+            card.innerHTML = `
+              <div class="video-thumb">
+                <img src="${v.img}" alt="${v.title}" loading="lazy">
+                <div class="video-play">${playIcon}</div>
+                <span class="video-source">${v.source}</span>
+              </div>
+              <div class="video-info">
+                <div class="video-title">${v.title}</div>
+                <div class="video-meta">${v.meta}</div>
+              </div>
+            `;
+          } else {
+            const bg = gradients[v.source] || 'linear-gradient(135deg, #3a4a5c, #1a1f2e)';
+            card.innerHTML = `
+              <div class="video-thumb video-thumb-placeholder" style="background: ${bg}">
+                <span class="video-thumb-text">${v.title}</span>
+                <div class="video-play">${playIcon}</div>
+                <span class="video-source">${v.source}</span>
+              </div>
+              <div class="video-info">
+                <div class="video-title">${v.title}</div>
+                <div class="video-meta">${v.meta}</div>
+              </div>
+            `;
+          }
           grid.appendChild(card);
         });
         sec.appendChild(grid);
@@ -1359,7 +1399,7 @@
             suppliers: 'Array<{ rank: number, name: string, desc: string, share: string, shareLabel: string }>',
             production: 'Array<{ title: string, desc: string }>',
             parts: 'Array<{ group: string, items: string[] }>',
-            videos: 'Array<{ title: string, source: string, meta: string, img: string, url: string }>'
+            videos: 'Array<{ title: string, source: string, meta: string, img: string (留空则用渐变占位), url: string }>'
           },
           stats: {
             totalLayers: layersData.length,
@@ -1545,7 +1585,7 @@ JSON 文件包含以下顶层字段：
    - title: 视频标题
    - source: 来源平台（如 Bilibili、CCTV、YouTube）
    - url: 视频链接
-   - cover: 封面图 URL（用 CSS 纯色/渐变占位或者大模型生成、对应视频封面图）
+   - img: 封面图 URL（留空字符串则自动用渐变色+标题文字占位，无需生成图片）
 
 ## 补充规则
 
@@ -1553,7 +1593,7 @@ JSON 文件包含以下顶层字段：
 2. 每个设备至少补充 3-5 家供应商、6-10 步生产流程、4-6 个零部件分组、2-4 个参考视频
 3. 供应商信息要真实准确，排名基于中国市场份额
 4. 参考视频链接使用真实可访问的 URL（Bilibili/CCTV /抖音/小红书等）
-5. 封面图用上述 API 格式生成，prompt 描述要具体（如"挖掘机生产线焊接车间工业摄影"）
+5. 封面图 img 字段留空即可，页面会自动用渐变色背景+标题文字占位
 6. 输出完整的 JSON 文件，保持原有结构不变，只新增 details 中的条目
 
 ## 输出格式
